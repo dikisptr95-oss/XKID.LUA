@@ -1,7 +1,11 @@
--- ================================ XKID CORE (MINIMAL WORKING) ================================
+-- ================================ XKID CORE (FIXED) ================================
 local Core = {}
 
--- Services
+-- IMPORTANT
+Core.Helpers = {}
+Core.FPS = {}
+
+-- ================================ SERVICES ================================
 Core.Services = {
     Players = game:GetService("Players"),
     UserInputService = game:GetService("UserInputService"),
@@ -11,7 +15,7 @@ Core.Services = {
     HttpService = game:GetService("HttpService"),
 }
 
--- Helper sederhana
+-- ================================ HELPERS ================================
 function Core.Helpers.getRoot()
     local char = Core.Services.Players.LocalPlayer.Character
     return char and char:FindFirstChild("HumanoidRootPart")
@@ -22,21 +26,31 @@ function Core.Helpers.getHum()
     return char and char:FindFirstChildOfClass("Humanoid")
 end
 
--- State minimal
+-- ================================ STATE ================================
 Core.State = {
-    Move = { ws = 16, jp = 50 },
-    ESP = { active = false },
+    Move = {
+        ws = 16,
+        jp = 50
+    },
+
+    ESP = {
+        active = false
+    }
 }
 
--- Notify wrapper (akan terhubung ke WindUI nanti)
+-- ================================ NOTIFY ================================
 Core.Notify = function(title, content, duration, icon)
-    print(string.format("[XKID] %s: %s", title, content))
+    print(string.format("[XKID] %s: %s", tostring(title), tostring(content)))
 end
 
--- FPS unlocker
+-- ================================ FPS ================================
 function Core.FPS.set(target)
-    pcall(function() if setfpscap then setfpscap(target or 120) end end)
+    pcall(function()
+        if setfpscap then
+            setfpscap(target or 120)
+        end
+    end)
 end
 
--- ⚠️ PENTING: RETURN CORE
+-- ================================ RETURN ================================
 return Core

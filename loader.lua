@@ -1,146 +1,226 @@
--- ================================ XKID HUB LOADER ================================
--- Repository: https://github.com/dikisptr95-oss/XKID.LUA
--- Cara pakai: loadstring(game:HttpGet("https://raw.githubusercontent.com/dikisptr95-oss/XKID.LUA/main/loader.lua"))()
-
+-- ================================ XKID HUB LOADER (DEBUG VER) ================================
 repeat task.wait() until game:IsLoaded()
 
--- ================================ KONFIGURASI ================================
-local BASE_URL = "https://raw.githubusercontent.com/dikisptr95-oss/XKID.LUA/main/"
+print("[XKID] LOADER START")
 
--- ================================ FUNGSI LOAD MODULE ================================
-local function loadModule(path)
-    local url = BASE_URL .. path
-    local success, result = pcall(function()
-        print("[XKID] Mengambil: " .. url)
-        local content = game:HttpGet(url, true)
-        return loadstring(content)
+-- ================================ PASTEBIN RAW URL ================================
+local PASTES = {
+    core = "https://pastebin.com/raw/b8xPrDa6",
+    ui = "https://pastebin.com/raw/pY1HrRS5",
+    esp = "https://pastebin.com/raw/vhQQycF8",
+    fly = "https://pastebin.com/raw/KgjnJ5r6",
+    freecam = "https://pastebin.com/raw/JGmQfH6L",
+    teleport = "https://pastebin.com/raw/dmkXvZik",
+    spectator = "https://pastebin.com/raw/nrfgSKxp",
+    visuals = "https://pastebin.com/raw/cDYAyy3J",
+    autolike = "https://pastebin.com/raw/pEEQ8D9f",
+    fling = "https://pastebin.com/raw/DSPrZJw2",
+    logger = "https://pastebin.com/raw/kE5F1ExN",
+    settings = "https://pastebin.com/raw/5GTf1efY",
+}
+
+-- ================================ SAFE LOADER ================================
+local function loadPaste(url, name)
+    print("[XKID] Loading:", name)
+
+    local success, content = pcall(function()
+        return game:HttpGet(url, true)
     end)
+
     if not success then
-        warn("[XKID] Gagal ambil " .. path .. ": " .. tostring(result))
-        return nil, result
+        warn("[XKID] HttpGet failed:", name, content)
+        return nil
     end
-    local execSuccess, execResult = pcall(result)
+
+    if not content or content == "" then
+        warn("[XKID] Empty content:", name)
+        return nil
+    end
+
+    print("[XKID] Content received:", name)
+
+    local func, err = loadstring(content)
+
+    if not func then
+        warn("[XKID] Compile failed:", name, err)
+        return nil
+    end
+
+    print("[XKID] Compiled:", name)
+
+    local execSuccess, result = pcall(func)
+
     if not execSuccess then
-        warn("[XKID] Gagal eksekusi " .. path .. ": " .. tostring(execResult))
-        return nil, execResult
+        warn("[XKID] Execution failed:", name, result)
+        return nil
     end
-    return execResult
+
+    print("[XKID] SUCCESS:", name)
+
+    return result
 end
 
--- ================================ CLEANUP SEBELUM LOAD ================================
+-- ================================ CLEAN OLD UI ================================
 pcall(function()
-    for _,v in pairs(game:GetService("CoreGui"):GetChildren()) do
-        if v.Name == "WindUI" or v.Name:find("XKID") then
+    for _, v in pairs(game:GetService("CoreGui"):GetChildren()) do
+        if v.Name == "WindUI" or string.find(v.Name, "XKID") then
+            print("[XKID] Removing old UI:", v.Name)
             v:Destroy()
         end
     end
 end)
 
 -- ================================ LOAD CORE ================================
-print("[XKID] Memuat core.lua...")
-local core = loadModule("core.lua")
-if not core then
-    error("[XKID] Gagal memuat core.lua. Pastikan file ada di repository.")
-end
-print("[XKID] Core berhasil dimuat!")
+local core = loadPaste(PASTES.core, "core")
 
--- ================================ LOAD SEMUA MODULES ================================
-local modules = {
-    esp = "modules/esp.lua",
-    fly = "modules/fly.lua",
-    freecam = "modules/freecam.lua",
-    teleport = "modules/teleport.lua",
-    spectator = "modules/spectator.lua",
-    visuals = "modules/visuals.lua",
-    autolike = "modules/autolike.lua",
-    fling = "modules/fling.lua",
-    logger = "modules/logger.lua",
-    settings = "modules/settings.lua",
+if not core then
+    error("[XKID] CORE FAILED")
+end
+
+print("[XKID] Core loaded")
+
+-- ================================ LOAD MODULES ================================
+local modules = {}
+
+local moduleNames = {
+    "esp",
+    "fly",
+    "freecam",
+    "teleport",
+    "spectator",
+    "visuals",
+    "autolike",
+    "fling",
+    "logger",
+    "settings"
 }
 
-local loadedModules = {}
+for _, name in ipairs(moduleNames) do
+    local mod = loadPaste(PASTES[name], name)
 
-for name, path in pairs(modules) do
-    print("[XKID] Memuat " .. path .. "...")
-    local mod = loadModule(path)
     if mod then
-        loadedModules[name] = mod
-        print("[XKID] ✓ " .. name .. " berhasil")
+        modules[name] = mod
+        print("[XKID] Module OK:", name)
     else
-        warn("[XKID] ✗ " .. name .. " gagal dimuat")
+        warn("[XKID] Module FAILED:", name)
     end
-    task.wait()
+
+    task.wait(0.1)
 end
 
--- ================================ SETUP MODULES YANG MEMERLUKAN INISIALISASI ================================
+-- ================================ SETUP ================================
 local Camera = workspace.CurrentCamera
 local UserInputService = core.Services.UserInputService
 local RunService = core.Services.RunService
 local onMobile = not UserInputService.KeyboardEnabled
 
--- Setup spectator
-if loadedModules.spectator then
-    loadedModules.spectatorApi = loadedModules.spectator.setup(core, core.State, Camera, UserInputService, RunService, onMobile)
-    loadedModules.selfspectateApi = loadedModules.spectator.setupSelfSpectate(core, core.State, Camera, UserInputService, RunService, onMobile)
+print("[XKID] Starting setup...")
+
+-- Spectator
+pcall(function()
+    if modules.spectator then
+        modules.spectatorApi = modules.spectator.setup(
+            core,
+            core.State,
+            Camera,
+            UserInputService,
+            RunService,
+            onMobile
+        )
+
+        modules.selfspectateApi = modules.spectator.setupSelfSpectate(
+            core,
+            core.State,
+            Camera,
+            UserInputService,
+            RunService,
+            onMobile
+        )
+
+        print("[XKID] Spectator setup OK")
+    end
+end)
+
+-- Teleport
+pcall(function()
+    if modules.teleport then
+        modules.teleportApi = modules.teleport.setupSmartTP(core, UserInputService)
+        modules.targetTPApi = modules.teleport.setupTargetTP(core, core.Services.Players)
+        modules.autowalkApi = modules.teleport.setupAutoWalk(core.State, core, RunService, Camera)
+        modules.coordApi = modules.teleport.setupCoordCache(core)
+
+        print("[XKID] Teleport setup OK")
+    end
+end)
+
+-- AutoLike
+pcall(function()
+    if modules.autolike then
+        modules.autolikeApi = modules.autolike.setup(core, core.State)
+        print("[XKID] AutoLike setup OK")
+    end
+end)
+
+-- Fling
+pcall(function()
+    if modules.fling then
+        modules.flingApi = modules.fling.setup(core, core.State, RunService)
+        print("[XKID] Fling setup OK")
+    end
+end)
+
+-- Logger
+pcall(function()
+    if modules.logger then
+        modules.loggerApi = modules.logger.setup(core, core.State)
+        print("[XKID] Logger setup OK")
+    end
+end)
+
+-- Settings
+pcall(function()
+    if modules.settings then
+        modules.settingsApi = modules.settings.setup(core, core.State, modules)
+        print("[XKID] Settings setup OK")
+    end
+end)
+
+-- Simple API
+if modules.visuals then
+    modules.visualsApi = modules.visuals
 end
 
--- Setup teleport
-if loadedModules.teleport then
-    loadedModules.teleportApi = loadedModules.teleport.setupSmartTP(core, UserInputService)
-    loadedModules.targetTPApi = loadedModules.teleport.setupTargetTP(core, core.Services.Players)
-    loadedModules.autowalkApi = loadedModules.teleport.setupAutoWalk(core.State, core, RunService, Camera)
-    loadedModules.coordApi = loadedModules.teleport.setupCoordCache(core)
+if modules.fly then
+    modules.flyApi = modules.fly
 end
 
--- Setup autolike
-if loadedModules.autolike then
-    loadedModules.autolikeApi = loadedModules.autolike.setup(core, core.State)
+if modules.freecam then
+    modules.freecamApi = modules.freecam
 end
 
--- Setup fling
-if loadedModules.fling then
-    loadedModules.flingApi = loadedModules.fling.setup(core, core.State, RunService)
+if modules.esp then
+    modules.espApi = modules.esp
 end
 
--- Setup logger
-if loadedModules.logger then
-    loadedModules.loggerApi = loadedModules.logger.setup(core, core.State)
-end
-
--- Setup settings
-if loadedModules.settings then
-    loadedModules.settingsApi = loadedModules.settings.setup(core, core.State, loadedModules)
-end
-
--- Setup visuals (langsung tanpa setup khusus karena pure functions)
-if loadedModules.visuals then
-    loadedModules.visualsApi = loadedModules.visuals
-end
-
--- Setup fly (langsung tanpa setup khusus)
-if loadedModules.fly then
-    loadedModules.flyApi = loadedModules.fly
-end
-
--- Setup freecam (langsung tanpa setup khusus)
-if loadedModules.freecam then
-    loadedModules.freecamApi = loadedModules.freecam
-end
-
--- Setup esp (langsung tanpa setup khusus)
-if loadedModules.esp then
-    loadedModules.espApi = loadedModules.esp
-end
+print("[XKID] Module setup complete")
 
 -- ================================ LOAD UI ================================
-print("[XKID] Memuat ui.lua...")
-local UI = loadModule("ui.lua")
+local UI = loadPaste(PASTES.ui, "ui")
 
 if UI and UI.create then
-    UI.create(core, loadedModules)
-    print("[XKID] ========================================")
-    print("[XKID] XKID HUB V2.0 SIAP DIGUNAKAN!")
-    print("[XKID] ========================================")
+    print("[XKID] Creating UI...")
+
+    local success, err = pcall(function()
+        UI.create(core, modules)
+    end)
+
+    if success then
+        print("[XKID] XKID HUB V2 READY!")
+    else
+        warn("[XKID] UI CREATE FAILED:", err)
+    end
 else
-    error("[XKID] Gagal memuat UI. Pastikan ui.lua ada di repository.")
+    error("[XKID] UI FAILED")
 end
+
+print("[XKID] LOADER FINISH")

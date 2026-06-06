@@ -1,20 +1,24 @@
 -- ================================ AUTO LIKE MODULE ================================
--- by @WTF.XKID
+-- by @WTF.XKID | Full Auto Like Engine dari script asli
 
 local AutoLike = {}
 
 function AutoLike.setup(core, state)
+    -- ================================ GET LIKE REMOTES ================================
     local function getLikeRemotes()
         local remotes = core.Services.ReplicatedStorage:FindFirstChild("Remotes")
         if not remotes then return nil, nil end
         return remotes:FindFirstChild("GetLikeDataRemote"), remotes:FindFirstChild("LikePlayerEvent")
     end
     
+    -- ================================ LIKE RANDOM PLAYER ================================
     local function likeRandomPlayer()
         local _, likePlayer = getLikeRemotes()
         if not likePlayer then return false, "Remote not found" end
+        
         local myRoot = core.Helpers.getRoot()
         local targets = {}
+        
         for _,p in pairs(core.Services.Players:GetPlayers()) do
             if p ~= core.Services.Players.LocalPlayer then
                 if state.AutoLike.radius > 0 and myRoot then
@@ -30,7 +34,9 @@ function AutoLike.setup(core, state)
                 end
             end
         end
+        
         if #targets == 0 then return false, "No players in range" end
+        
         local target
         if #targets == 1 then
             target = targets[1]
@@ -39,8 +45,10 @@ function AutoLike.setup(core, state)
                 target = targets[math.random(1, #targets)]
             until target ~= state.AutoLike.lastTarget or #targets <= 1
         end
+        
         state.AutoLike.lastTarget = target
         local success = pcall(function() likePlayer:FireServer(target) end)
+        
         if success then
             state.AutoLike.count = state.AutoLike.count + 1
             return true, target.DisplayName
@@ -48,9 +56,11 @@ function AutoLike.setup(core, state)
         return false, "Failed"
     end
     
+    -- ================================ START AUTO LIKE ================================
     function AutoLike.start()
         if state.AutoLike.active then return end
         state.AutoLike.active = true
+        
         state.AutoLike.thread = task.spawn(function()
             while state.AutoLike.active and getgenv()._XKID_RUNNING do
                 local ok, result = likeRandomPlayer()
@@ -62,9 +72,11 @@ function AutoLike.setup(core, state)
             end
             state.AutoLike.thread = nil
         end)
+        
         core.Notify("Auto Like", "ON", 2, "heart")
     end
     
+    -- ================================ STOP AUTO LIKE ================================
     function AutoLike.stop()
         state.AutoLike.active = false
         if state.AutoLike.thread then
@@ -74,8 +86,29 @@ function AutoLike.setup(core, state)
         core.Notify("Auto Like", "OFF", 1.5, "heart")
     end
     
+    -- ================================ GET TOTAL LIKES ================================
     function AutoLike.getCount()
         return state.AutoLike.count
+    end
+    
+    -- ================================ SET RADIUS ================================
+    function AutoLike.setRadius(radius)
+        state.AutoLike.radius = radius
+    end
+    
+    -- ================================ SET COOLDOWN ================================
+    function AutoLike.setMinCooldown(cd)
+        state.AutoLike.minCD = cd
+    end
+    
+    function AutoLike.setMaxCooldown(cd)
+        state.AutoLike.maxCD = cd
+    end
+    
+    -- ================================ RESET COUNTER ================================
+    function AutoLike.resetCount()
+        state.AutoLike.count = 0
+        core.Notify("Auto Like", "Counter reset", 1.5, "heart")
     end
     
     return AutoLike

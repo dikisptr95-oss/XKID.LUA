@@ -1,15 +1,19 @@
 -- ================================ HARD FLING MODULE ================================
--- by @WTF.XKID
+-- by @WTF.XKID | Full Hard Fling Engine dari script asli
 
 local Fling = {}
 
 function Fling.setup(core, state, runService)
-    local hardFlingConn, hardFlingRampConn, hardFlingBAV = nil, nil, nil
+    local hardFlingConn = nil
+    local hardFlingRampConn = nil
+    local hardFlingBAV = nil
     
+    -- ================================ START HARD FLING ================================
     function Fling.start()
         if state.HardFling.active then return end
+        
         state.HardFling.active = true
-        state.Move.ncp = true
+        state.Move.ncp = true  -- Aktifkan noclip otomatis
         state.HardFling.currentPower = 0
         state.HardFling.rampUpActive = true
         
@@ -20,8 +24,9 @@ function Fling.setup(core, state, runService)
             hardFlingBAV.P = 100000
         end
         
+        -- Ramp up power gradually
         local rampStart = tick()
-        hardFlingRampConn = core.TrackConnection(runService.Heartbeat:Connect(function()
+        hardFlingRampConn = runService.Heartbeat:Connect(function()
             if not state.HardFling.rampUpActive then return end
             local t = math.clamp((tick() - rampStart) / 2, 0, 1)
             state.HardFling.currentPower = state.HardFling.power * t
@@ -29,12 +34,15 @@ function Fling.setup(core, state, runService)
                 state.HardFling.currentPower = state.HardFling.power
                 state.HardFling.rampUpActive = false
             end
-        end))
+        end)
         
-        hardFlingConn = core.TrackConnection(runService.Heartbeat:Connect(function()
+        -- Main fling loop
+        hardFlingConn = runService.Heartbeat:Connect(function()
             if not state.HardFling.active then return end
+            
             local r = core.Helpers.getRoot()
             if not r then return end
+            
             if state.HardFling.mode == "Spin" then
                 if hardFlingBAV and hardFlingBAV.Parent then
                     hardFlingBAV.AngularVelocity = Vector3.new(0, state.HardFling.currentPower, 0)
@@ -47,25 +55,45 @@ function Fling.setup(core, state, runService)
                     hardFlingBAV.AngularVelocity = Vector3.new(shakeX, shakeY, shakeZ)
                 end
             end
+            
+            -- NoClip effect
             local char = core.Services.Players.LocalPlayer.Character
             if char then
                 for _,p in pairs(char:GetDescendants()) do
-                    if p:IsA("BasePart") then p.CanCollide = false end
+                    if p:IsA("BasePart") then
+                        p.CanCollide = false
+                    end
                 end
             end
-        end))
+        end)
         
         core.Notify("Hard Fling", "ON — " .. state.HardFling.mode, 2, "zap")
     end
     
+    -- ================================ STOP HARD FLING ================================
     function Fling.stop()
+        if not state.HardFling.active then return end
+        
         state.HardFling.active = false
         state.HardFling.rampUpActive = false
         state.HardFling.currentPower = 0
-        if hardFlingConn then hardFlingConn:Disconnect(); hardFlingConn = nil end
-        if hardFlingRampConn then hardFlingRampConn:Disconnect(); hardFlingRampConn = nil end
-        if hardFlingBAV then hardFlingBAV:Destroy(); hardFlingBAV = nil end
         
+        if hardFlingConn then
+            hardFlingConn:Disconnect()
+            hardFlingConn = nil
+        end
+        
+        if hardFlingRampConn then
+            hardFlingRampConn:Disconnect()
+            hardFlingRampConn = nil
+        end
+        
+        if hardFlingBAV then
+            hardFlingBAV:Destroy()
+            hardFlingBAV = nil
+        end
+        
+        -- Reset velocity
         local r = core.Helpers.getRoot()
         if r then
             pcall(function()
@@ -74,23 +102,43 @@ function Fling.setup(core, state, runService)
             end)
         end
         
+        -- Reset noclip
         local char = core.Services.Players.LocalPlayer.Character
         if char then
             for _,p in pairs(char:GetDescendants()) do
-                if p:IsA("BasePart") then p.CanCollide = true end
+                if p:IsA("BasePart") then
+                    p.CanCollide = true
+                end
             end
         end
         
         core.Notify("Hard Fling", "OFF", 1.5, "zap")
     end
     
+    -- ================================ SET FLING MODE ================================
     function Fling.setMode(mode)
         state.HardFling.mode = mode
         core.Notify("Fling Mode", mode, 1.5, "rotate-cw")
     end
     
+    -- ================================ SET FLING POWER ================================
     function Fling.setPower(power)
         state.HardFling.power = power
+        core.Notify("Fling Power", power, 1.5, "zap")
+    end
+    
+    -- ================================ TOGGLE FLING ================================
+    function Fling.toggle()
+        if state.HardFling.active then
+            Fling.stop()
+        else
+            Fling.start()
+        end
+    end
+    
+    -- ================================ IS ACTIVE ================================
+    function Fling.isActive()
+        return state.HardFling.active
     end
     
     return Fling

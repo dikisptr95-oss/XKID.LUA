@@ -1,5 +1,5 @@
 -- ================================ VISUALS MODULE ================================
--- by @WTF.XKID | Filter Visual & Presets
+-- by @WTF.XKID | Full Visual Filter Engine dari script asli
 
 local Visuals = {}
 
@@ -83,10 +83,18 @@ function Visuals.applyFilter(core, state, filterName)
     lighting.ExposureCompensation = core.OriginalLighting.ExposureCompensation
     
     if filterName == "Default" then
-        state.CustomFilter.tintR = 255; state.CustomFilter.tintG = 255; state.CustomFilter.tintB = 255
-        state.CustomFilter.saturation = 0; state.CustomFilter.contrast = 0; state.CustomFilter.brightness = 0
-        state.CustomFilter.exposure = 0; state.CustomFilter.bloomIntensity = 0; state.CustomFilter.bloomSize = 24
-        state.CustomFilter.clockTime = 14; state.CustomFilter.dofIntensity = 0; state.CustomFilter.dofDistance = 50
+        state.CustomFilter.tintR = 255
+        state.CustomFilter.tintG = 255
+        state.CustomFilter.tintB = 255
+        state.CustomFilter.saturation = 0
+        state.CustomFilter.contrast = 0
+        state.CustomFilter.brightness = 0
+        state.CustomFilter.exposure = 0
+        state.CustomFilter.bloomIntensity = 0
+        state.CustomFilter.bloomSize = 24
+        state.CustomFilter.clockTime = 14
+        state.CustomFilter.dofIntensity = 0
+        state.CustomFilter.dofDistance = 50
         core.Notify("Visuals", "Default", 1.5, "palette")
         return
     end
@@ -147,10 +155,18 @@ end
 
 -- ================================ RESET CUSTOM FX ================================
 function Visuals.resetCustomFX(core, state)
-    state.CustomFilter.tintR = 255; state.CustomFilter.tintG = 255; state.CustomFilter.tintB = 255
-    state.CustomFilter.saturation = 0; state.CustomFilter.contrast = 0; state.CustomFilter.brightness = 0
-    state.CustomFilter.exposure = 0; state.CustomFilter.bloomIntensity = 0; state.CustomFilter.bloomSize = 24
-    state.CustomFilter.clockTime = 14; state.CustomFilter.dofIntensity = 0; state.CustomFilter.dofDistance = 50
+    state.CustomFilter.tintR = 255
+    state.CustomFilter.tintG = 255
+    state.CustomFilter.tintB = 255
+    state.CustomFilter.saturation = 0
+    state.CustomFilter.contrast = 0
+    state.CustomFilter.brightness = 0
+    state.CustomFilter.exposure = 0
+    state.CustomFilter.bloomIntensity = 0
+    state.CustomFilter.bloomSize = 24
+    state.CustomFilter.clockTime = 14
+    state.CustomFilter.dofIntensity = 0
+    state.CustomFilter.dofDistance = 50
     Visuals.applyCustomFilter(core, state)
     core.Notify("Visuals", "FX Reset", 2, "rotate-ccw")
 end
@@ -162,6 +178,46 @@ function Visuals.getPresetList()
         "Edgy HD", "Full Bright HD", "Soft Pastel HD", "Cinematic Soft", "Ultra HD", "Realistic",
         "Night HD", "Senja", "Cinematic Film", "Golden Hour", "Moody Blue"
     }
+end
+
+-- ================================ SET CUSTOM VALUE ================================
+function Visuals.setTint(core, state, r, g, b)
+    state.CustomFilter.tintR = r
+    state.CustomFilter.tintG = g
+    state.CustomFilter.tintB = b
+    Visuals.applyCustomFilter(core, state)
+end
+
+function Visuals.setSaturation(core, state, value)
+    state.CustomFilter.saturation = value
+    Visuals.applyCustomFilter(core, state)
+end
+
+function Visuals.setContrast(core, state, value)
+    state.CustomFilter.contrast = value
+    Visuals.applyCustomFilter(core, state)
+end
+
+function Visuals.setBrightness(core, state, value)
+    state.CustomFilter.brightness = value
+    Visuals.applyCustomFilter(core, state)
+end
+
+function Visuals.setBloom(core, state, intensity, size)
+    state.CustomFilter.bloomIntensity = intensity
+    state.CustomFilter.bloomSize = size
+    Visuals.applyCustomFilter(core, state)
+end
+
+function Visuals.setClockTime(core, state, time)
+    state.CustomFilter.clockTime = time
+    Visuals.applyCustomFilter(core, state)
+end
+
+function Visuals.setDOF(core, state, intensity, distance)
+    state.CustomFilter.dofIntensity = intensity
+    state.CustomFilter.dofDistance = distance
+    Visuals.applyCustomFilter(core, state)
 end
 
 return Visuals

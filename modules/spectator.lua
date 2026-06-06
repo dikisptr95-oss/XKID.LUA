@@ -1,5 +1,5 @@
 -- ================================ SPECTATOR MODULE ================================
--- by @WTF.XKID | Spectate & Self-Spectate Engine
+-- by @WTF.XKID | Full Spectate & Self-Spectate Engine dari script asli
 
 local Spectator = {}
 
@@ -77,6 +77,7 @@ function Spectator.setup(core, state, camera, userInputService, runService, onMo
     end
     
     local function startSpecCapture()
+        -- Mouse drag untuk orbit
         table.insert(specConns, userInputService.InputChanged:Connect(function(inp)
             if not Spec.active then return end
             if inp.UserInputType == Enum.UserInputType.MouseMovement then
@@ -85,6 +86,7 @@ function Spectator.setup(core, state, camera, userInputService, runService, onMo
             end
         end))
         
+        -- Touch support untuk mobile
         if onMobile then
             local specPinch, specPinchD, specTM = {}, nil, nil
             table.insert(specConns, userInputService.InputBegan:Connect(function(inp, gp)
@@ -120,7 +122,9 @@ function Spectator.setup(core, state, camera, userInputService, runService, onMo
     end
     
     function Spectator.toggle(v, target)
-        if state.SelfSpec.active then Spectator.toggleSelfSpec(false) end
+        if state.SelfSpec and state.SelfSpec.active then 
+            if Spectator.toggleSelfSpec then Spectator.toggleSelfSpec(false) end
+        end
         Spec.active = v
         if v then
             Spec.target = target
@@ -153,11 +157,21 @@ function Spectator.setup(core, state, camera, userInputService, runService, onMo
     end
     
     function Spectator.getTargets()
-        return core.Helpers.getDisplayNamesWithSelf()
+        local t = { "[Self]" }
+        for _,p in pairs(core.Services.Players:GetPlayers()) do 
+            if p ~= core.Services.Players.LocalPlayer then 
+                table.insert(t, p.DisplayName) 
+            end 
+        end
+        return t
     end
     
     function Spectator.findTarget(str)
-        return core.Helpers.findPlayerByDisplay(str)
+        if str == "[Self]" then return core.Services.Players.LocalPlayer end
+        for _,p in pairs(core.Services.Players:GetPlayers()) do
+            if p.DisplayName == str or p.Name == str then return p end
+        end
+        return nil
     end
     
     return Spectator
@@ -268,9 +282,16 @@ function Spectator.setupSelfSpectate(core, state, camera, userInputService, runS
     
     function Spectator.toggleSelfSpec(v)
         if v then
-            if state.Fly.active then
-                local fly = require(script.Parent.fly)
-                fly.toggle(false, state, core, runService, userInputService, camera, onMobile)
+            -- Matikan fitur lain yang konflik
+            if state.Fly and state.Fly.active then
+                if core.Modules and core.Modules.fly then
+                    core.Modules.fly.stop(state, core)
+                end
+            end
+            if state.Freecam and state.Freecam.active then
+                if core.Modules and core.Modules.freecam then
+                    core.Modules.freecam.stop(state, core, runService, camera)
+                end
             end
             SS.active = true
             SS.origFov = camera.FieldOfView
@@ -290,6 +311,18 @@ function Spectator.setupSelfSpectate(core, state, camera, userInputService, runS
     function Spectator.setSelfSpecMode(mode)
         SS.mode = mode
         core.Notify("Self-Spec", "Mode: " .. mode, 1.5, "camera")
+    end
+    
+    function Spectator.setSelfSpecRadius(radius)
+        SS.radius = radius
+    end
+    
+    function Spectator.setSelfSpecHeight(height)
+        SS.height = height
+    end
+    
+    function Spectator.setSelfSpecSpeed(speed)
+        SS.speed = speed
     end
     
     return Spectator

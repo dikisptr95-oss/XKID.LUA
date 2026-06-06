@@ -1,5 +1,5 @@
 -- ================================ TELEPORT MODULE ================================
--- by @WTF.XKID
+-- by @WTF.XKID | Full Teleport Engine dari script asli
 
 local Teleport = {}
 
@@ -49,6 +49,38 @@ function Teleport.setupSmartTP(core, userInputService)
     return Teleport
 end
 
+-- ================================ TARGET TELEPORT ================================
+function Teleport.setupTargetTP(core, players)
+    local function findPlayerByDisplay(str, currentLP)
+        if str == "[Self]" then return currentLP end
+        for _,p in pairs(players:GetPlayers()) do
+            if p.DisplayName == str or p.Name == str then return p end
+        end
+        return nil
+    end
+    
+    function Teleport.teleportToTarget(targetName)
+        pcall(function()
+            if targetName == "" then
+                core.Notify("Teleport", "Input target!", 2, "circle-alert")
+                return
+            end
+            local target = findPlayerByDisplay(targetName, core.Services.Players.LocalPlayer)
+            if not target or not target.Parent or not target.Character then
+                core.Notify("Teleport", "Invalid Target", 2, "circle-alert")
+                return
+            end
+            local tHrp = core.Helpers.getCharRoot(target.Character)
+            local myHrp = core.Helpers.getRoot()
+            if not tHrp or not myHrp then return end
+            myHrp.CFrame = tHrp.CFrame * CFrame.new(0, 0, 3) + Vector3.new(0, 2, 0)
+            core.Notify("Teleport", target.DisplayName, 2, "map-pin")
+        end)
+    end
+    
+    return Teleport
+end
+
 -- ================================ AUTO WALK ================================
 function Teleport.setupAutoWalk(state, core, runService, camera)
     function Teleport.startAutoWalk()
@@ -75,6 +107,40 @@ function Teleport.setupAutoWalk(state, core, runService, camera)
         local hum = core.Helpers.getHum()
         if hum then hum.WalkSpeed = state.Move.ws end
         core.Notify("Auto Walk", "OFF", 1.5, "play")
+    end
+    
+    return Teleport
+end
+
+-- ================================ COORDINATES CACHE ================================
+function Teleport.setupCoordCache(core)
+    local SavedLocs = {}
+    
+    function Teleport.saveCoord(slot)
+        local r = core.Helpers.getRoot()
+        if not r then 
+            core.Notify("Slot " .. slot, "Failed - No character", 1.5, "circle-alert")
+            return false
+        end
+        SavedLocs[slot] = r.CFrame
+        core.Notify("Slot " .. slot, "Saved", 1.5, "save")
+        return true
+    end
+    
+    function Teleport.loadCoord(slot)
+        if not SavedLocs[slot] then
+            core.Notify("Slot " .. slot, "Empty", 1.5, "save")
+            return false
+        end
+        local r = core.Helpers.getRoot()
+        if not r then return false end
+        r.CFrame = SavedLocs[slot]
+        core.Notify("Slot " .. slot, "Loaded", 1.5, "map-pin")
+        return true
+    end
+    
+    function Teleport.getSavedCoords()
+        return SavedLocs
     end
     
     return Teleport
